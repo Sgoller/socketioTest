@@ -33,18 +33,29 @@ public class SocketUtil {
             Log.d(TAG, "createSocket: error");
             throw new RuntimeException(e);
         }
-        mSocket.connected();
+        mSocket.connect();
     }
 
-    public void send(String message,final EmitCallBack ack){
+    public void emit(String event,String data, final EmitCallBack ack){
         final long start = System.currentTimeMillis();
         final boolean timeout = false;
         if (mSocket.connected()){
-            mSocket.send(message, new Ack() {
+            mSocket.emit(event,data, new Ack() {
                 @Override
                 public void call(Object... args) {
-                    if (!ack.getCalled())
-                        ack.onSuccess(args[0].toString());
+                    if (!ack.getCalled()){
+                        EmitResult result = new EmitResult();
+                        result.setResponse(true);
+                        result.setData(args[0].toString());
+                        ack.onSuccess(result);
+                    }
+                    else {
+                        EmitResult result = new EmitResult();
+                        result.setResponse(false);
+                        result.setData(args[0].toString());
+                        result.setMessage(EmitResult.TIME_OUT);
+                        ack.onSuccess(result);
+                    }
                 }
             });
 
@@ -53,8 +64,13 @@ public class SocketUtil {
                 public void run() {
                     try {
                         Thread.sleep(TIMEOUT);
-                        if (!ack.getCalled())
-                            ack.onFailure("timeout");
+                        if (!ack.getCalled()){
+                            EmitResult result = new EmitResult();
+                            result.setResponse(false);
+                            result.setMessage(EmitResult.TIME_OUT);
+                            result.setData(EmitResult.TIME_OUT);
+                            ack.onFailure(result);
+                        }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -63,7 +79,14 @@ public class SocketUtil {
 
         }
         else{
-            ack.onFailure("not connected");
+            if (!ack.getCalled()){
+                EmitResult result = new EmitResult();
+                result.setResponse(false);
+                result.setMessage(EmitResult.NOT_CONNECT);
+                result.setData(EmitResult.NOT_CONNECT);
+                ack.onFailure(result);
+                ack.onFailure(result);
+            }
         }
     }
 }

@@ -27,10 +27,10 @@ public  class EmitCallBack {
         return isCalled;
     }
 
-    public synchronized  void onSuccess(String arg){
+    public synchronized  void onSuccess(EmitResult arg){
         isCalled = true;
     };
-    public synchronized  void onFailure(String arg){
+    public synchronized  void onFailure(EmitResult arg){
         isCalled = true;
     };
 }

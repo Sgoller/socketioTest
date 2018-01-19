@@ -1,6 +1,6 @@
 package com.boshim.www.sockettest;
 
-import android.content.Context;
+import android.graphics.Color;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.RecyclerView.Adapter;
 import android.view.LayoutInflater;
@@ -19,26 +19,29 @@ import java.util.List;
 
 public class LogAdapter extends Adapter<LogAdapter.LogViewHolder> {
 
-    private List<String> mStringList;
-
-    private LayoutInflater mInflater;
+    private List<EmitResult> mStringList;
 
 
-    public LogAdapter(Context context,List<String> list) {
+    public LogAdapter(List<EmitResult> list) {
         mStringList = list;
-        mInflater = LayoutInflater.from(context);
     }
 
     @Override
     public LogViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = mInflater.inflate(R.layout.item_log,parent,false);
-        LogViewHolder logViewHolder = new LogViewHolder(view);
-        return null;
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_log,parent,false);
+        return new LogViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(LogViewHolder holder, int position) {
-        holder.tv.setText(mStringList.get(position));
+        EmitResult emitResult = mStringList.get(position);
+        if (!emitResult.getResponse()){
+            holder.tv.setTextColor(Color.rgb(255,0, 0));
+        }else {
+            holder.tv.setTextColor(Color.rgb(0,0, 255));
+        }
+        holder.tv.setText(emitResult.getId()+emitResult.getData());
+
     }
 
     @Override

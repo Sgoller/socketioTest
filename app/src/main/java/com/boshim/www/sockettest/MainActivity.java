@@ -35,9 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
     private LogAdapter mAdapter;
 
-    private List<String> mLogList = new ArrayList<String>(){{
-        add("请创建");
-    }};
+    private List<EmitResult> mLogList = new ArrayList<EmitResult>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,11 +44,12 @@ public class MainActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-        mAdapter = new LogAdapter(this,mLogList);
+        logview.setLayoutManager(linearLayoutManager);
+        mAdapter = new LogAdapter(mLogList);
         logview.setAdapter(mAdapter);
     }
 
-    @OnClick({R.id.start,R.id.create})
+    @OnClick({R.id.start,R.id.create,R.id.stop})
     protected void onClick(View view){
         switch(view.getId()){
             case  R.id.create:
@@ -69,6 +68,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendTest(){
+        if (mSocketUtil==null)
+            return;
         toSend = true;
         new Thread(new Runnable() {
             @Override
@@ -80,36 +81,46 @@ public class MainActivity extends AppCompatActivity {
                     }catch (Exception e){
 
                     }
-                    sendMessage("12");
+                    SocketData data = new SocketData();
+                    data.put("userID","test");
+                    data.put("userType",1);
+                    data.put("roomCode","ssssssssssssssss");
+                    sendMessage("toServer:user:enterRoom",data);
                 }
             }
         }).start();
     };
 
-    private void sendMessage(String message){
-        mSocketUtil.send(message,new EmitCallBack(){
+    private void sendMessage(String event,SocketData message){
+        String sender = message.toString();
+        mSocketUtil.emit(event,sender,new EmitCallBack(){
             @Override
-            public synchronized void onSuccess(String arg) {
+            public synchronized void onSuccess(EmitResult arg) {
                 super.onSuccess(arg);
-                printLog(this.getId()+arg);
+                arg.setId(this.getId());
+                printLog(arg);
             }
 
             @Override
-            public synchronized void onFailure(String arg) {
+            public synchronized void onFailure(EmitResult arg) {
                 super.onFailure(arg);
-                printLog(this.getId()+arg);
+                arg.setId(this.getId());
+                printLog(arg);
             }
         });
 
     }
 
-    private void printLog(final String log){
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mLogList.add(log);
-                mAdapter.notifyItemInserted(mLogList.size());
-            }
-        });
+    private void printLog(final EmitResult log){
+        if (!log.getResponse() && log.getMessage().equals(EmitResult.TIME_OUT)){
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mLogList.add(log);
+                    mAdapter.notifyItemInserted(mLogList.size());
+                    logview.scrollToPosition(mLogList.size()-1);
+                }
+            });
+        }
     }
 }
